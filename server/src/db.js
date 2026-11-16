@@ -1,8 +1,9 @@
 const { Pool } = require('pg');
-const { databaseUrl, timezone } = require('./config');
+const { databaseUrl } = require('./config');
 // Every connection uses the business time zone, so "today" means today in India
+// The business time zone (APP_TIMEZONE) is set as the database default by `npm run migrate`,
+// so "today" means today in India on every connection, including Neon's.
 const pool = new Pool({ connectionString: databaseUrl, max: 10 });
-pool.on('connect', client => { client.query(`SET TIME ZONE '${timezone.replace(/'/g, '')}'`).catch(() => {}); });
 // NUMERIC columns come back as strings by default; turn them into numbers
 require('pg').types.setTypeParser(1700, v => (v === null ? null : Number(v)));
 

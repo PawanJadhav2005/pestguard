@@ -19,6 +19,13 @@ const { pool } = require('../src/db');
     } catch (e) { await client.query('ROLLBACK'); console.error('Failed', f, e.message); process.exit(1); }
     finally { client.release(); }
   }
+  // Make the business time zone the default for every new connection to this database
+  const tz = require('../src/config').timezone;
+  try {
+    const db = (await pool.query('SELECT current_database() d')).rows[0].d;
+    await pool.query(`ALTER DATABASE "${db.replace(/"/g, '')}" SET timezone TO '${tz.replace(/'/g, '')}'`);
+    console.log(`Time zone set to ${tz}`);
+  } catch (e) { console.warn(`Could not set the database time zone (${e.message}). Dates may show in UTC.`); }
   console.log('Database is up to date');
   await pool.end();
 })();
