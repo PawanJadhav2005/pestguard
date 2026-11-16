@@ -1,7 +1,8 @@
 const { Pool } = require('pg');
 const { databaseUrl, timezone } = require('./config');
 // Every connection uses the business time zone, so "today" means today in India
-const pool = new Pool({ connectionString: databaseUrl, max: 10, options: `-c TimeZone=${timezone}` });
+const pool = new Pool({ connectionString: databaseUrl, max: 10 });
+pool.on('connect', client => { client.query(`SET TIME ZONE '${timezone.replace(/'/g, '')}'`).catch(() => {}); });
 // NUMERIC columns come back as strings by default; turn them into numbers
 require('pg').types.setTypeParser(1700, v => (v === null ? null : Number(v)));
 

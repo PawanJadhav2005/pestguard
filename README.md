@@ -23,6 +23,19 @@ Three parts in one folder:
 | `admin-web/` | Admin portal (React) in the browser | Admin |
 | `mobile/` | Android app (Expo / React Native) | Technicians, call center staff and admins |
 
+## Deploy online (no PC needed): Render + Neon, both free
+
+1. **Database (Neon):** sign up at https://neon.tech (use "Continue with GitHub"), create a project named `pestguard` in region **Asia Pacific (Singapore)**. On the project dashboard click **Connect**, turn **Connection pooling OFF**, and copy the connection string (starts with `postgresql://`, ends with `sslmode=require`).
+2. **Server (Render):** sign up at https://render.com with GitHub. Click **New → Blueprint**, pick the `pestguard` repo, and fill in:
+   - `DATABASE_URL`: the Neon connection string
+   - `SEED_PASSWORD`: the password the test accounts will use (pick a strong one)
+   - leave the `EXOTEL_*` boxes empty for now
+   Click **Apply**. The first deploy takes about 5 minutes. Your address will look like `https://pestguard-xxxx.onrender.com`.
+3. Open that address: it's the admin website. Sign in with `admin@pestguard.local` and your `SEED_PASSWORD`.
+4. Build the app for it: GitHub → **Actions → Build Android APK → Run workflow**, server address = your Render address. Install the APK from the run's *Artifacts*.
+
+Every push to GitHub redeploys automatically. Free plan: the server sleeps after 15 minutes with no use and takes about a minute to wake.
+
 ## What is built (stage 1)
 
 **Admin portal**

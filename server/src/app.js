@@ -3,7 +3,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const { corsOrigins, uploadDir } = require('./config');
+const { corsOrigins } = require('./config');
 const { requireAuth, allow } = require('./auth');
 const { HttpError, wrap } = require('./errors');
 const { query } = require('./db');
@@ -39,9 +39,9 @@ app.get('/api/files/:name', wrap(async (req, res) => {
     const ok = await query(`SELECT 1 FROM reports WHERE technician_id=$1 AND $2 IN (before_photo, after_photo, signature)`, [req.user.id, name]);
     if (!ok.rows.length) throw new HttpError(403, 'You do not have permission to see this file');
   }
-  const file = path.join(uploadDir, name);
-  if (!fs.existsSync(file)) throw new HttpError(404, 'Not found');
-  res.sendFile(path.resolve(file));
+  const f = (await query('SELECT mime, data FROM files WHERE name=$1', [name])).rows[0];
+  if (!f) throw new HttpError(404, 'Not found');
+  res.set('Content-Type', f.mime).set('Cache-Control', 'private, max-age=86400').send(f.data);
 }));
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));

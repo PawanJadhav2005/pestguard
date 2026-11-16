@@ -1,13 +1,10 @@
 const router = require('express').Router();
 const multer = require('multer');
 const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-const { uploadDir } = require('../config');
+const { query } = require('../db');
 const { wrap, HttpError } = require('../errors');
 const { allow } = require('../auth');
 
-fs.mkdirSync(uploadDir, { recursive: true });
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
 // Checks the real file content, not just the name or the type the phone claims
@@ -24,7 +21,7 @@ router.post('/', allow('technician', 'admin'), (req, res, next) => upload.single
   const ext = sniff(req.file.buffer);
   if (!ext) throw new HttpError(400, 'Only JPG or PNG images are allowed');
   const name = `${crypto.randomBytes(16).toString('hex')}.${ext}`;
-  await fs.promises.writeFile(path.join(uploadDir, name), req.file.buffer);
+  await query('INSERT INTO files (name, mime, data, uploaded_by) VALUES ($1,$2,$3,$4)', [name, ext === 'png' ? 'image/png' : 'image/jpeg', req.file.buffer, req.user.id]);
   res.status(201).json({ file: name });
 }));
 module.exports = router;

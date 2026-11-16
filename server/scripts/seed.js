@@ -1,7 +1,8 @@
 // Seeds services, demo staff accounts and (optionally) SAMPLE customers, inventory and jobs.
 //   npm run seed                -> services + staff + sample data (only if the database has no customers yet)
 //   npm run seed -- --no-sample -> services + staff only (use this before importing your real data)
-// Demo password for every staff account: demo1234  (change them in Admin > Team before going live)
+// Password for every demo staff account: SEED_PASSWORD from .env / hosting settings, or demo1234 if not set.
+// It only applies when an account is first created; re-running the seed never changes passwords.
 require('../src/config');
 const bcrypt = require('bcryptjs');
 const { pool } = require('../src/db');
@@ -47,7 +48,8 @@ const ITEMS = [
       const p = Object.fromEntries(PROPS.map((k, i) => [k, prices[i]]));
       await c.query(`INSERT INTO services (code,name,warranty,prices) VALUES ($1,$2,$3,$4) ON CONFLICT (code) DO NOTHING`, [code, name, warranty, JSON.stringify(p)]);
     }
-    const hash = await bcrypt.hash('demo1234', 10);
+    const password = process.env.SEED_PASSWORD || 'demo1234';
+    const hash = await bcrypt.hash(password, 10);
     const ids = {};
     for (const [name, email, role, phone, area, skills] of STAFF) {
       const r = await c.query(`INSERT INTO users (name,email,password_hash,role,phone,area,skills) VALUES ($1,$2,$3,$4,$5,$6,$7)
@@ -103,7 +105,7 @@ const ITEMS = [
       console.log('Sample customers, inventory and jobs added (marked SAMPLE).');
     } else if (sample) console.log('Customers already exist, so no sample data was added.');
     await c.query('COMMIT');
-    console.log('Seed complete. Staff password: demo1234');
+    console.log(`Seed complete. Staff password: ${process.env.SEED_PASSWORD ? '(the SEED_PASSWORD you set)' : 'demo1234'}`);
   } catch (e) { await c.query('ROLLBACK'); console.error(e); process.exit(1); }
   finally { c.release(); await pool.end(); }
 })();
