@@ -7,6 +7,8 @@ on:
         description: 'Server address the app connects to by default (can be changed on the sign-in screen)'
         required: true
         default: 'http://192.168.1.10:4000'
+permissions:
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -35,6 +37,16 @@ jobs:
       - name: Build release APK
         working-directory: mobile/android
         run: ./gradlew assembleRelease --no-daemon
+      - name: Name the APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk ../PestGuard.apk
+      - name: Publish APK as a release (direct download, no zip)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          name: PestGuard APK ${{ github.run_number }}
+          body: "Server address built in: ${{ inputs.server_url }}"
+          files: PestGuard.apk
+          make_latest: true
       - uses: actions/upload-artifact@v4
         with:
           name: PestGuard-apk
