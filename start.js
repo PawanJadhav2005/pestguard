@@ -9,13 +9,28 @@ const ROOT = __dirname;
 const WIN = process.platform === 'win32';
 const server = path.join(ROOT, 'server');
 
-if (!fs.existsSync(path.join(server, '.env')) || !fs.existsSync(path.join(server, 'node_modules'))) {
-  console.error('\nPestGuard is not set up yet. Double-click SETUP.bat first.\n');
+const npm = (args, cwd) => spawnSync(WIN ? 'npm.cmd' : 'npm', args, { cwd, stdio: 'inherit', shell: WIN }).status === 0;
+
+if (!fs.existsSync(path.join(server, '.env'))) {
+  console.error('\nPestGuard is not set up yet. Double-click SETUP.bat first (or put your database settings in server\\.env).\n');
   process.exit(1);
+}
+// First run on this PC: install what's needed (works with an online database like Neon, no PostgreSQL install)
+if (!fs.existsSync(path.join(server, 'node_modules'))) {
+  console.log('Installing the server (first run, takes a minute)...');
+  if (!npm(['install', '--no-audit', '--no-fund'], server)) { console.error('Install failed. Check your internet connection.'); process.exit(1); }
 }
 if (!fs.existsSync(path.join(ROOT, 'admin-web', 'dist', 'index.html'))) {
   console.log('Building the admin portal (first run)...');
-  spawnSync(WIN ? 'npm.cmd' : 'npm', ['run', 'build'], { cwd: path.join(ROOT, 'admin-web'), stdio: 'inherit', shell: WIN });
+  const admin = path.join(ROOT, 'admin-web');
+  if (!fs.existsSync(path.join(admin, 'node_modules'))) npm(['install', '--no-audit', '--no-fund'], admin);
+  npm(['run', 'build'], admin);
+}
+// Create/update tables and demo accounts (safe to repeat, never deletes data)
+console.log('Checking the database...');
+if (!npm(['run', 'migrate'], server) || !npm(['run', 'seed'], server)) {
+  console.error('\nCould not reach the database. Check DATABASE_URL in server\\.env and your internet connection.\n');
+  process.exit(1);
 }
 
 const port = (fs.readFileSync(path.join(server, '.env'), 'utf8').match(/^PORT=(\d+)/m) || [])[1] || '4000';
