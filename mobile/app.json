@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "PestGuard",
+    "slug": "pestguard",
+    "scheme": "pestguard",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "in.pestguard.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d5544",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "PestGuard uses the camera to take before and after photos of treated areas.",
+          "photosPermission": "PestGuard lets you attach photos of treated areas from your gallery."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "http://192.168.1.10:4000"
+    }
+  }
+}
