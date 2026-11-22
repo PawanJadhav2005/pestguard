@@ -1,11 +1,12 @@
 # Render Blueprint: creates the PestGuard server (API + live updates + admin website).
-# Database: a free Neon Postgres database. Paste its connection string as DATABASE_URL when Render asks.
+# Database: a free Neon Postgres database. Paste its connection string as DATABASE_URL when Render asks,
+# ending in ?sslmode=verify-full (remove &channel_binding=require).
 services:
   - type: web
     name: pestguard
     runtime: node
     plan: free
-    region: singapore
+    region: virginia   # US East, next to the Neon database (us-east-1)
     buildCommand: cd server && npm ci --no-audit --no-fund && cd ../admin-web && npm ci --no-audit --no-fund && npm run build
     startCommand: cd server && npm run migrate && npm run seed && npm start
     healthCheckPath: /api/health

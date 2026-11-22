@@ -23,20 +23,21 @@ Three parts in one folder:
 | `admin-web/` | Admin portal (React) in the browser | Admin |
 | `mobile/` | Android app (Expo / React Native) | Technicians, call center staff and admins |
 
-## Deploy online (no PC needed): Google Cloud Run + Neon
+## Deploy online (no PC needed): Render + Neon, both free
 
-Cloud Run runs the server (API, live updates and admin website) from the `Dockerfile` and redeploys on every push to GitHub. Neon hosts the PostgreSQL database. Both have free allowances that cover testing.
+Render runs the server (API, live updates and admin website) using `render.yaml`, and redeploys on every push to GitHub. Neon hosts the PostgreSQL database. No card is needed for either free plan.
 
-1. **Neon database:** https://neon.tech → sign up with GitHub → new project `pestguard`, region **AWS Asia Pacific (Singapore)** → **Connect** → turn **Connection pooling OFF** → copy the connection string.
-2. **Google Cloud:** https://console.cloud.google.com → start the free trial → create a project `pestguard`.
-3. **Cloud Run → Deploy container → Connect repository** (continuous deployment with Cloud Build). Enable any APIs it asks for, sign in to GitHub, pick `PawanJadhav2005/pestguard`, branch `^main$`, build type **Dockerfile** (`/Dockerfile`).
-4. Service settings: name `pestguard`, region **asia-southeast1 (Singapore)**, **Allow public access**, billing **Request-based**, min instances **0**, max instances **2**, request timeout **3600** seconds.
-5. Variables (Containers → Variables & Secrets): `DATABASE_URL` (Neon string), `JWT_SECRET` (long random text), `SEED_PASSWORD` (password for the test accounts), `APP_TIMEZONE` = `Asia/Kolkata`.
-6. **Create.** After about 5 minutes you get `https://pestguard-….run.app`. That is the admin website and the address for the app.
-7. **Billing → Budgets & alerts:** add a small budget (e.g. ₹100) with email alerts, so you are warned before anything is charged.
-8. Build the app: GitHub → **Actions → Build Android APK → Run workflow** with the Cloud Run address.
+1. **Neon database:** https://console.neon.tech → your project → **Connect** → connection pooling **OFF** → copy the string. Change its ending to `?sslmode=verify-full` (remove `&channel_binding=require`).
+2. **Render:** https://render.com → sign up with GitHub → **New → Blueprint** → pick the `pestguard` repo. Fill in:
+   - `DATABASE_URL`: the Neon string from step 1
+   - `SEED_PASSWORD`: the password for the test accounts (use the same one as in your PC's `server\.env`, if you use both)
+   - leave the `EXOTEL_*` boxes empty
+   Click **Apply**. The first deploy takes about 5 minutes. The server runs in **US East (Virginia)**, next to the database.
+3. Your address looks like `https://pestguard-xxxx.onrender.com`. Open it to reach the admin website.
+4. Build the app: GitHub → **Actions → Build Android APK → Run workflow** with that address. Download **PestGuard.apk** from the repo's **Releases** page.
 
-(The repo also contains `render.yaml` if you ever prefer Render instead.)
+Free plan: the server sleeps after 15 minutes with no use and takes about a minute to wake on the next request.
+(The repo also contains a `Dockerfile` if you later move to Google Cloud Run or another Docker host.)
 
 ## What is built (stage 1)
 
