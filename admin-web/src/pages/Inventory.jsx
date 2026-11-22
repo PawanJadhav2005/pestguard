@@ -26,6 +26,8 @@ export default function Inventory() {
   const value = all.filter(i => i.active).reduce((s, i) => s + i.quantity * i.cost_per_unit, 0);
 
   return <>
+    {all.some(i => i.active && i.category !== 'equipment' && Number(i.quantity) === 0) && <div className="error-box" style={{ background: '#fff6e5', color: '#8a5600' }}>
+      Some items show 0 in stock. Technicians can't log chemicals that aren't in stock, so use <b>+ Add</b> to enter the opening stock for each item.</div>}
     <div className="tiles">
       <div className="tile" style={{ '--h': 'var(--forest-3)' }}><div className="l">Items in use</div><div className="v">{all.filter(i => i.active).length}</div></div>
       <div className="tile" style={{ '--h': 'var(--bad)' }}><div className="l">Low stock</div><div className="v">{low.length}</div></div>

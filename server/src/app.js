@@ -29,6 +29,7 @@ app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/staff', require('./routes/staff'));
 app.use('/api/calls', require('./routes/calls'));
 app.use('/api/uploads', require('./routes/uploads'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api', require('./routes/misc'));
 
 // Photos and signatures: only admins, or the technician who uploaded them in a report

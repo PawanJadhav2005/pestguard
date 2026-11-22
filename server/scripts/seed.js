@@ -59,7 +59,9 @@ const ITEMS = [
     await c.query(`UPDATE users SET available=false WHERE email='sunil@pestguard.local'`);
 
     const hasCustomers = (await c.query('SELECT count(*)::int n FROM customers')).rows[0].n > 0;
-    if (sample && !hasCustomers) {
+    const removedBefore = (await c.query(`SELECT to_regclass('public.app_settings') IS NOT NULL t`)).rows[0].t
+      && (await c.query(`SELECT 1 FROM app_settings WHERE key='sample_removed'`)).rows.length > 0;
+    if (sample && !hasCustomers && !removedBefore) {
       for (const [sku, name, cat, unit, qty, reorder, cost] of ITEMS) {
         const it = await c.query(`INSERT INTO inventory_items (sku,name,category,unit,quantity,reorder_level,cost_per_unit) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (sku) DO NOTHING RETURNING id`,
           [sku, name, cat, unit, qty, reorder, cost]);

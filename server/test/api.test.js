@@ -250,3 +250,62 @@ test('a technician cannot call customers outside their jobs', async () => {
   const notMine = (await pool.query(`SELECT id FROM customers WHERE ref='SAMPLE-008'`)).rows[0].id;
   assert.equal((await api('rakesh').post('/api/calls', { customerId: notMine })).status, 403);
 });
+
+test('admin can preview and import a company Excel file (safe to repeat)', async () => {
+  const ExcelJS = require('exceljs');
+  const wb = new ExcelJS.Workbook();
+  const old = wb.addWorksheet('Jan 2019');
+  old.addRow(['Service done and Collection Jan 2019']);
+  old.addRow(['Customer Name', 'service date', 'Collection date', 'Amount']);
+  old.addRow(['Hotel Test Bed bug', '13-1-2019', '13-1-2019', 1000]);
+  old.addRow(['Mr Test', '26.10..2019', null, 800]);
+  old.addRow(['No Date Person', null, null, 500]);
+  const recent = wb.addWorksheet('October 2026');
+  recent.addRow([new Date(Date.UTC(2026, 9, 1))]);
+  recent.addRow(['Name ', 'Job Date', 'Collection date', 'Amount', 'Time', 'Service', 'Mobile No', 'Area', 'Refrance', 'Address']);
+  recent.addRow(['Test Spice Hotel', '1.10.2026', null, 1700, '12.30 AM', 'Cockorach', 9811100099, 'Hotel', 'JDR', 'Pune Nagar road']);
+  recent.addRow(['Test Ranade', '3.10.2026', '3.10.2026', 3000, '9.00 AM', 'Bedbugs', '98111 00098', '2 BHK', 'Facebook', 'Sadashiv peth']);
+  const copy = wb.addWorksheet('Feb 2027'); // a copied sheet: must not create duplicates
+  copy.addRow(['Name ', 'Job Date', 'Collection date', 'Amount', 'Time', 'Service', 'Mobile No', 'Area', 'Refrance', 'Address']);
+  copy.addRow(['Test Spice Hotel', '1.10.2026', '2.10.2026', 1700, '12.30 AM', 'Cockorach', 9811100099, 'Hotel', 'JDR', 'Pune Nagar road']);
+  const soon = new Date(Date.now() + 3 * 864e5);
+  copy.addRow(['Upcoming Test Office', `${soon.getDate()}.${soon.getMonth() + 1}.${soon.getFullYear()}`, null, 2200, '11.00 AM', 'Rat', 9811100097, 'Office', 'Visit', 'Hinjewadi']);
+  wb.addWorksheet('expenses').addRow(['Date', 'Chemical', 'Amount']);
+  const buf = Buffer.from(await wb.xlsx.writeBuffer());
+
+  const up = (q, who = 'admin') => request(app).post(`/api/admin/import${q}`).set('Authorization', `Bearer ${tok[who]}`).attach('file', buf, 'company.xlsx');
+  assert.equal((await up('?commit=0', 'cc')).status, 403);
+  assert.equal((await request(app).post('/api/admin/import').set('Authorization', `Bearer ${tok.admin}`).attach('file', Buffer.from('hello'), 'x.xlsx')).status, 400);
+
+  const pre = await up('?commit=0');
+  assert.equal(pre.status, 200, JSON.stringify(pre.body));
+  const p = pre.body.preview;
+  assert.equal(p.duplicatesRemoved, 1);
+  assert.equal(p.history.total, 4);
+  assert.equal(p.upcoming.length, 1);
+  assert.equal(p.skippedTotal, 1);
+  assert.equal((await pool.query(`SELECT count(*)::int n FROM service_history WHERE import_key IS NOT NULL`)).rows[0].n, 0, 'preview saves nothing');
+
+  const r1 = await up('?commit=1&removeSample=1');
+  assert.equal(r1.status, 200, JSON.stringify(r1.body));
+  assert.equal(r1.body.result.historyAdded, 4);
+  assert.equal(r1.body.result.jobsAdded, 1);
+  assert.ok(r1.body.result.removed.customers >= 8);
+  const hotel = (await pool.query(`SELECT * FROM customers WHERE name='Test Spice Hotel'`)).rows[0];
+  assert.equal(hotel.mobile, '+919811100099');
+  assert.equal(hotel.property_type, 'Commercial');
+  const bed = (await pool.query(`SELECT service_code FROM service_history WHERE description='Bedbugs'`)).rows[0];
+  assert.equal(bed.service_code, 'bed');
+  assert.equal((await pool.query(`SELECT collected_on::text d FROM service_history h JOIN customers c ON c.id=h.customer_id WHERE c.name='Test Spice Hotel'`)).rows[0].d, '2026-10-02');
+  assert.equal((await pool.query(`SELECT count(*)::int n FROM customers WHERE ref LIKE 'SAMPLE-%'`)).rows[0].n, 0);
+
+  const r2 = await up('?commit=1');
+  assert.equal(r2.body.result.historyAdded, 0);
+  assert.equal(r2.body.result.jobsAdded, 0);
+  assert.equal(r2.body.preview.customers.new, 0);
+
+  // call center still never sees the imported numbers
+  const cc = await api('cc').get('/api/customers?q=Test');
+  assert.ok(cc.body.items.length >= 3);
+  assert.doesNotMatch(JSON.stringify(cc.body), /98111000\d\d/);
+});

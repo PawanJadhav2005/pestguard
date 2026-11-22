@@ -51,9 +51,9 @@ router.get('/:id', wrap(async (req, res) => {
   const [amc, history, openJobs, calls] = await Promise.all([
     query('SELECT * FROM amc_contracts WHERE customer_id=$1 ORDER BY end_date DESC', [id]),
     query(`SELECT * FROM (
-        SELECT 'job' src, j.id, j.completed_at::date date, j.service_code, j.price, u.name technician_name, 'JB-'||j.id ref
+        SELECT 'job' src, j.id, j.completed_at::date date, j.service_code, j.price, u.name technician_name, 'JB-'||j.id ref, NULL::text description
           FROM jobs j LEFT JOIN users u ON u.id=j.technician_id WHERE j.customer_id=$1 AND j.status='Completed'
-        UNION ALL SELECT 'import', h.id, h.service_date, h.service_code, h.price, h.technician_name, h.ref FROM service_history h WHERE h.customer_id=$1
+        UNION ALL SELECT 'import', h.id, h.service_date, h.service_code, h.price, h.technician_name, h.ref, h.description FROM service_history h WHERE h.customer_id=$1
       ) x ORDER BY date DESC LIMIT 50`, [id]),
     query(`SELECT j.id, j.service_code, j.status, j.scheduled_at, u.name technician_name FROM jobs j LEFT JOIN users u ON u.id=j.technician_id
            WHERE j.customer_id=$1 AND j.status NOT IN ('Completed','Cancelled','Unable to Complete') ORDER BY scheduled_at`, [id]),

@@ -14,10 +14,11 @@ import Customers from './pages/Customers';
 import Team from './pages/Team';
 import Calls from './pages/Calls';
 import Settings from './pages/Settings';
+import Import from './pages/Import';
 
 const PAGES = [
   ['/', 'Dashboard', '▦'], ['/jobs', 'Jobs', '☰'], ['/approvals', 'Approvals', '✓'], ['/inventory', 'Inventory', '▤'],
-  ['/customers', 'Customers', '☺'], ['/team', 'Team', '⚒'], ['/calls', 'Calls & follow-ups', '☎'], ['/settings', 'Services & prices', '⚙']
+  ['/customers', 'Customers', '☺'], ['/team', 'Team', '⚒'], ['/calls', 'Calls & follow-ups', '☎'], ['/settings', 'Services & prices', '⚙'], ['/import', 'Import data', '⇪']
 ];
 
 function Shell({ user, onLogout }) {
@@ -79,6 +80,7 @@ function Shell({ user, onLogout }) {
             <Route path="/team" element={<Team me={user} />} />
             <Route path="/calls" element={<Calls />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/import" element={<Import />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div></main>

@@ -24,7 +24,7 @@ export default function Customers() {
           <thead><tr><th>Customer</th><th>Mobile</th><th>Address</th><th>Property</th><th>Last service</th><th>AMC</th></tr></thead>
           <tbody>{d.items.map(c => <tr key={c.id}>
             <td><button className="link" onClick={() => setOpen(c.id)}>{c.name}</button><span className="sub">{c.ref}</span></td>
-            <td className="num">{c.mobile}</td><td style={{ maxWidth: 280 }}>{c.address}</td><td>{c.propertyType}</td>
+            <td className="num">{c.mobile || <span className="muted">-</span>}</td><td style={{ maxWidth: 280 }}>{c.address || <span className="muted">-</span>}</td><td>{c.propertyType}{c.category && c.category !== c.propertyType && <span className="sub">{c.category}</span>}</td>
             <td>{c.lastService ? <>{fmt.date(c.lastService.date)}<span className="sub">{fmt.money(c.lastService.price)}</span></> : '-'}</td>
             <td>{c.amc ? <Badge hue={new Date(c.amc.endDate) < new Date() ? 'red' : new Date(c.amc.endDate) < new Date(Date.now() + 30 * 864e5) ? 'amber' : 'green'}>{c.amc.visitsDone}/{c.amc.visitsTotal} · ends {fmt.date(c.amc.endDate)}</Badge> : '-'}</td>
           </tr>)}</tbody></table></div>
@@ -42,12 +42,12 @@ function CustomerModal({ id, onClose }) {
   if (r.loading) return <Modal title="Customer" onClose={onClose}><Loading /></Modal>;
   if (r.error) return <Modal title="Customer" onClose={onClose}><ErrorBox msg={r.error} /></Modal>;
   const { customer: c, amc, history, openJobs, calls } = r.data;
-  return <Modal wide title={c.name} sub={`${c.ref} · ${c.propertyType} · ${c.address}`} onClose={onClose} footer={<button className="btn" onClick={onClose}>Close</button>}>
-    <dl className="kv"><dt>Mobile</dt><dd>{c.mobile}</dd><dt>Area</dt><dd>{c.area || '-'}</dd>
+  return <Modal wide title={c.name} sub={[c.ref, c.category || c.propertyType, c.address].filter(Boolean).join(' · ')} onClose={onClose} footer={<button className="btn" onClick={onClose}>Close</button>}>
+    <dl className="kv"><dt>Mobile</dt><dd>{c.mobile || 'Not recorded'}</dd><dt>Area</dt><dd>{c.area || '-'}</dd>
       {amc[0] && <><dt>AMC</dt><dd>{amc[0].visits_done} of {amc[0].visits_total} visits · ends {fmt.date(amc[0].end_date)} · {fmt.money(amc[0].price)}</dd></>}</dl>
     {openJobs.length > 0 && <div><h3 style={{ marginBottom: 6 }}>Upcoming</h3>{openJobs.map(j => <div key={j.id} className="spread sm" style={{ padding: '4px 0' }}><span>JB-{j.id} · {fmt.dt(j.scheduled_at)} · {j.technician_name || 'unassigned'}</span><Badge>{j.status}</Badge></div>)}</div>}
     <div><h3 style={{ marginBottom: 6 }}>Service history</h3>{history.length ? <table><thead><tr><th>Date</th><th>Ref</th><th>Service</th><th>Technician</th><th className="right">Price</th></tr></thead>
-      <tbody>{history.map(h => <tr key={h.src + h.id}><td>{fmt.date(h.date)}</td><td>{h.ref}</td><td>{h.service_code}</td><td>{h.technician_name || '-'}</td><td className="right num">{fmt.money(h.price)}</td></tr>)}</tbody></table> : <span className="muted sm">No past services</span>}</div>
+      <tbody>{history.map(h => <tr key={h.src + h.id}><td>{fmt.date(h.date)}</td><td>{h.ref}</td><td>{h.description || h.service_code}</td><td>{h.technician_name || '-'}</td><td className="right num">{fmt.money(h.price)}</td></tr>)}</tbody></table> : <span className="muted sm">No past services</span>}</div>
     {calls.length > 0 && <div><h3 style={{ marginBottom: 6 }}>Calls</h3>{calls.map(l => <div key={l.id} className="sm" style={{ padding: '3px 0' }}><b>{l.outcome || l.status}</b> · {fmt.dt(l.created_at)} · {l.by_name}{l.notes && ` · ${l.notes}`}</div>)}</div>}
   </Modal>;
 }

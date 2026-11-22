@@ -5,7 +5,7 @@ function customerOut(c, role) {
   if (!c) return null;
   const out = {
     id: c.id, ref: c.ref, name: c.name, address: c.address, area: c.area,
-    propertyType: c.property_type, notes: c.notes ?? null
+    propertyType: c.property_type, category: c.category ?? null, notes: c.notes ?? null
   };
   if (role === 'admin') out.mobile = c.mobile;
   return out;
