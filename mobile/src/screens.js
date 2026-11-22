@@ -34,6 +34,7 @@ export function AlertsScreen({ inStack = false }) {
 }
 
 export function ProfileScreen({ children, inStack = false }) {
+  const router = useRouter();
   const { user, logout } = useAuth();
   return (
     <Screen padTop={!inStack}>
@@ -44,6 +45,7 @@ export function ProfileScreen({ children, inStack = false }) {
         <View><H style={{ fontSize: 18 }}>{user?.name}</H><Muted>{user?.email}</Muted><Muted>{{ technician: `Technician · ${user?.area || ''}`, admin: 'Admin', callcenter: 'Call center' }[user?.role]}</Muted></View>
       </Card>
       {children}
+      <Btn title="Change password" kind="ghost" icon="key-outline" onPress={() => router.push('/change-password')} />
       <Btn title="Sign out" kind="danger" icon="log-out-outline" onPress={logout} />
     </Screen>
   );

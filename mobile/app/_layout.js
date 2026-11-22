@@ -13,6 +13,9 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerStyle: { backgroundColor: C.forest }, headerTintColor: '#fff', headerTitleStyle: { fontWeight: '700' }, contentStyle: { backgroundColor: C.bg } }}>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="signup" options={{ headerShown: false }} />
+          <Stack.Screen name="staff/[id]" options={{ title: 'Staff' }} />
+          <Stack.Screen name="change-password" options={{ title: 'Change password' }} />
           <Stack.Screen name="(tech)" options={{ headerShown: false }} />
           <Stack.Screen name="(cc)" options={{ headerShown: false }} />
           <Stack.Screen name="(admin)" options={{ headerShown: false }} />

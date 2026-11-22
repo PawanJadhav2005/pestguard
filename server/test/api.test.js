@@ -5,6 +5,8 @@ const assert = require('node:assert');
 const { execSync } = require('child_process');
 const path = require('path');
 const http = require('http');
+process.env.LOGIN_RATE_LIMIT = process.env.LOGIN_RATE_LIMIT || '1000';
+process.env.SIGNUP_RATE_LIMIT = process.env.SIGNUP_RATE_LIMIT || '1000';
 require('../src/config');
 const { pool } = require('../src/db');
 
@@ -308,4 +310,50 @@ test('admin can preview and import a company Excel file (safe to repeat)', async
   const cc = await api('cc').get('/api/customers?q=Test');
   assert.ok(cc.body.items.length >= 3);
   assert.doesNotMatch(JSON.stringify(cc.body), /98111000\d\d/);
+});
+
+test('users can change their own password; admin can add and edit staff', async () => {
+  const t = api('rakesh');
+  assert.equal((await t.post('/api/auth/change-password', { currentPassword: 'wrong', newPassword: 'NewPass@123' })).status, 400);
+  assert.equal((await t.post('/api/auth/change-password', { currentPassword: 'demo1234', newPassword: 'short' })).status, 400);
+  assert.equal((await t.post('/api/auth/change-password', { currentPassword: 'demo1234', newPassword: 'NewPass@123' })).status, 200);
+  assert.equal((await request(app).post('/api/auth/login').send({ email: 'rakesh@pestguard.local', password: 'demo1234' })).status, 401);
+  assert.equal((await request(app).post('/api/auth/login').send({ email: 'rakesh@pestguard.local', password: 'NewPass@123' })).status, 200);
+
+  const a = api('admin');
+  const add = await a.post('/api/staff', { name: 'Owner Test', email: 'owner@test.in', password: 'Owner@1234', role: 'admin', phone: '+919800000099' });
+  assert.equal(add.status, 201);
+  assert.equal((await a.post('/api/staff', { name: 'Dup', email: 'OWNER@test.in', password: 'Owner@1234', role: 'admin' })).status, 409);
+  const ed = await request(app).patch(`/api/staff/${add.body.user.id}`).set('Authorization', `Bearer ${tok.admin}`).send({ email: 'owner2@test.in', password: 'Reset@1234' });
+  assert.equal(ed.status, 200);
+  assert.equal((await request(app).post('/api/auth/login').send({ email: 'owner2@test.in', password: 'Reset@1234' })).status, 200);
+  assert.equal((await request(app).patch(`/api/staff/${add.body.user.id}`).set('Authorization', `Bearer ${tok.admin}`).send({ email: 'admin@pestguard.local' })).status, 409);
+  assert.equal((await request(app).patch(`/api/staff/${add.body.user.id}`).set('Authorization', `Bearer ${tok.cc}`).send({ active: false })).status, 403);
+});
+
+test('new staff can sign up, but cannot sign in until an admin approves', async () => {
+  const s = (b) => request(app).post('/api/auth/signup').send(b);
+  assert.equal((await s({ name: 'Ravi New', email: 'ravi@new.in', phone: '9811122233', password: 'Ravi@1234', role: 'admin' })).status, 400, 'cannot sign up as admin');
+  assert.equal((await s({ name: 'Ravi New', email: 'ravi@new.in', phone: '98', password: 'Ravi@1234', role: 'technician' })).status, 400);
+  assert.equal((await s({ name: 'Ravi New', email: 'ravi@new.in', phone: '9811122233', password: 'Ravi@1234', role: 'technician', area: 'Baner' })).status, 201);
+  assert.equal((await s({ name: 'Ravi Again', email: 'RAVI@new.in', phone: '9811122233', password: 'Ravi@1234', role: 'technician' })).status, 409);
+  const wrong = await request(app).post('/api/auth/login').send({ email: 'ravi@new.in', password: 'nope' });
+  assert.equal(wrong.status, 401, 'wrong password does not reveal the pending account');
+  const pending = await request(app).post('/api/auth/login').send({ email: 'ravi@new.in', password: 'Ravi@1234' });
+  assert.equal(pending.status, 403);
+  assert.match(pending.body.error, /waiting for the admin/);
+  const n = await api('admin').get('/api/notifications');
+  assert.ok(n.body.items.some(x => x.title.startsWith('New sign-up: Ravi New')));
+  const staff = (await api('admin').get('/api/staff')).body.items;
+  const ravi = staff.find(u => u.email === 'ravi@new.in');
+  assert.equal(ravi.approved, false);
+  assert.equal((await request(app).patch(`/api/staff/${ravi.id}`).set('Authorization', `Bearer ${tok.cc}`).send({ approved: true })).status, 403);
+  const ok = await request(app).patch(`/api/staff/${ravi.id}`).set('Authorization', `Bearer ${tok.admin}`).send({ approved: true, role: 'technician', skills: ['gpc'] });
+  assert.equal(ok.status, 200);
+  assert.equal((await request(app).post('/api/auth/login').send({ email: 'ravi@new.in', password: 'Ravi@1234' })).status, 200);
+  // rejecting: only waiting requests can be deleted
+  assert.equal((await request(app).delete(`/api/staff/${ravi.id}`).set('Authorization', `Bearer ${tok.admin}`)).status, 409);
+  await s({ name: 'Spam Person', email: 'spam@x.in', phone: '9811122299', password: 'Spam@1234', role: 'callcenter' });
+  const spam = (await api('admin').get('/api/staff')).body.items.find(u => u.email === 'spam@x.in');
+  assert.equal((await request(app).delete(`/api/staff/${spam.id}`).set('Authorization', `Bearer ${tok.admin}`)).status, 200);
 });

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { Redirect } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../src/auth';
@@ -11,6 +11,7 @@ import { C } from '../src/theme';
 export default function Login() {
   const { user, login } = useAuth();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [server, setServer] = useState(session.baseUrl);
@@ -41,6 +42,8 @@ export default function Login() {
             : <Pressable onPress={() => setShowServer(true)}><Muted>Server: {server} · <Text style={{ color: C.forest2, fontWeight: '700' }}>Change</Text></Muted></Pressable>}
           <ErrorText>{err}</ErrorText>
           <Btn title="Sign in" onPress={submit} loading={busy} />
+          <Pressable onPress={() => { session.setServer(server.trim()); router.push('/signup'); }} style={{ alignItems: 'center', padding: 6 }}>
+            <Muted>New here? <Text style={{ color: C.forest2, fontWeight: '700' }}>Create an account</Text></Muted></Pressable>
         </Card>
       </ScrollView>
     </KeyboardAvoidingView>

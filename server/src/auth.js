@@ -7,9 +7,9 @@ function sign(user) { return jwt.sign({ sub: user.id, role: user.role }, jwtSecr
 
 async function userFromToken(token) {
   const p = jwt.verify(token, jwtSecret);
-  const { rows } = await query('SELECT id, name, email, role, phone, area, skills, available, active FROM users WHERE id=$1', [p.sub]);
+  const { rows } = await query('SELECT id, name, email, role, phone, area, skills, available, active, approved FROM users WHERE id=$1', [p.sub]);
   const u = rows[0];
-  if (!u || !u.active) throw new Error('inactive');
+  if (!u || !u.active || !u.approved) throw new Error('inactive');
   return u;
 }
 

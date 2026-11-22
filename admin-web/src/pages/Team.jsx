@@ -12,11 +12,20 @@ export default function Team({ me }) {
   const patch = async (u, body, msg) => { try { await api(`/staff/${u.id}`, { method: 'PATCH', body }); toast(msg); r.reload(); } catch (e) { toast(e.message, true); } };
   if (r.loading) return <Loading />;
   if (r.error) return <ErrorBox msg={r.error} retry={r.reload} />;
+  const pending = r.data.items.filter(u => !u.approved);
+  const reject = async u => { try { await api(`/staff/${u.id}`, { method: 'DELETE' }); toast(`${u.name}'s request was rejected`); r.reload(); } catch (e) { toast(e.message, true); } };
   return <>
-    <div className="spread"><span className="muted">{r.data.items.length} staff accounts</span><button className="btn primary" onClick={() => setAdd(true)}>+ Add staff</button></div>
+    {pending.length > 0 && <div className="card"><div className="card-head"><h3>Waiting for approval ({pending.length})</h3><span className="muted sm">People who created an account in the app</span></div>
+      <div className="table-wrap"><table><tbody>{pending.map(u => <tr key={u.id}>
+        <td><b>{u.name}</b><span className="sub">{u.email} · {u.phone || 'no phone'}</span></td>
+        <td><Badge hue={u.role === 'technician' ? 'green' : 'amber'}>{ROLE[u.role]}</Badge></td>
+        <td className="right" style={{ whiteSpace: 'nowrap' }}>
+          <button className="btn sm good" onClick={() => patch(u, { approved: true }, `${u.name} can sign in now`)}>Approve</button>{' '}
+          <button className="btn sm danger" onClick={() => reject(u)}>Reject</button></td></tr>)}</tbody></table></div></div>}
+    <div className="spread"><span className="muted">{r.data.items.length - pending.length} staff accounts</span><button className="btn primary" onClick={() => setAdd(true)}>+ Add staff</button></div>
     <div className="card"><div className="table-wrap"><table>
       <thead><tr><th>Name</th><th>Role</th><th>Phone</th><th>Area</th><th>Skills</th><th>Open / done</th><th>Available</th><th>Active</th></tr></thead>
-      <tbody>{r.data.items.map(u => <tr key={u.id} style={{ opacity: u.active ? 1 : .55 }}>
+      <tbody>{r.data.items.filter(u => u.approved).map(u => <tr key={u.id} style={{ opacity: u.active ? 1 : .55 }}>
         <td><b>{u.name}</b><span className="sub">{u.email}</span></td><td><Badge hue={{ admin: 'violet', callcenter: 'amber', technician: 'green' }[u.role]}>{ROLE[u.role]}</Badge></td>
         <td className="num">{u.phone || <span className="muted">Missing</span>}</td><td>{u.area || '-'}</td>
         <td className="sm">{u.skills.map(s => SKILLS[s]).join(', ') || '-'}</td>

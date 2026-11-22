@@ -10,6 +10,8 @@ export default function AdminTabs() {
   const isAdmin = user?.role === 'admin';
   const dash = useApi(isAdmin ? '/dashboard' : null, ['report:submitted', 'report:reviewed', 'inventory:changed', 'job:updated']);
   const n = useApi(isAdmin ? '/notifications' : null, ['notification']);
+  const staff = useApi(isAdmin ? '/staff' : null, ['notification']);
+  const waiting = (staff.data?.items || []).filter(u => !u.approved).length;
   if (!user) return <Redirect href="/login" />;
   if (!isAdmin) return <Redirect href="/" />;
   const c = dash.data?.counts;
@@ -20,7 +22,7 @@ export default function AdminTabs() {
       <Tabs.Screen name="jobs" options={{ title: 'Jobs', tabBarIcon: icon('list-outline'), tabBarBadge: c && (c.overdue + c.unassigned) ? c.overdue + c.unassigned : undefined }} />
       <Tabs.Screen name="approvals" options={{ title: 'Approvals', tabBarIcon: icon('checkmark-done-outline'), tabBarBadge: c?.awaiting || undefined }} />
       <Tabs.Screen name="inventory" options={{ title: 'Inventory', tabBarIcon: icon('cube-outline'), tabBarBadge: dash.data?.lowStock?.length || undefined }} />
-      <Tabs.Screen name="more" options={{ title: 'More', tabBarIcon: icon('menu-outline'), tabBarBadge: n.data?.unread || undefined }} />
+      <Tabs.Screen name="more" options={{ title: 'More', tabBarIcon: icon('menu-outline'), tabBarBadge: (n.data?.unread || 0) + waiting || undefined }} />
     </Tabs>
   );
 }
