@@ -9,7 +9,7 @@ services:
     region: virginia   # US East, next to the Neon database (us-east-1)
     buildCommand: cd server && npm ci --no-audit --no-fund && cd ../admin-web && npm ci --no-audit --no-fund && npm run build
     startCommand: cd server && npm run migrate && npm run seed && npm start
-    healthCheckPath: /api/health
+    healthCheckPath: /api/ping   # no database, so keeping the server awake does not use Neon free compute
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
