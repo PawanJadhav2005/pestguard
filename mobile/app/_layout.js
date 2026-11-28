@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '../src/auth';
 import LiveBanner from '../src/LiveBanner';
+import WakingBanner from '../src/WakingBanner';
 import { C } from '../src/theme';
 
 export default function RootLayout() {
@@ -32,6 +33,7 @@ export default function RootLayout() {
           <Stack.Screen name="call/[customerId]" options={{ title: 'Call', presentation: 'modal' }} />
         </Stack>
         <LiveBanner />
+        <WakingBanner />
       </AuthProvider>
     </SafeAreaProvider>
   );

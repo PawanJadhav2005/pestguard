@@ -357,3 +357,9 @@ test('new staff can sign up, but cannot sign in until an admin approves', async 
   const spam = (await api('admin').get('/api/staff')).body.items.find(u => u.email === 'spam@x.in');
   assert.equal((await request(app).delete(`/api/staff/${spam.id}`).set('Authorization', `Bearer ${tok.admin}`)).status, 200);
 });
+
+test('ping works without sign-in and without the database', async () => {
+  const r = await request(app).get('/api/ping');
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body, { ok: true });
+});

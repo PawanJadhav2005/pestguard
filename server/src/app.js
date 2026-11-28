@@ -18,6 +18,9 @@ app.use(express.json({ limit: '200kb' }));
 app.get('/api/health', async (req, res) => {
   try { await query('SELECT 1'); res.json({ ok: true, db: 'up' }); } catch { res.status(503).json({ ok: false, db: 'down' }); }
 });
+// Tiny check that does NOT touch the database: use this for free "keep awake" pingers,
+// so the server stays awake while the Neon database can still sleep when nobody uses the app.
+app.get('/api/ping', (req, res) => res.set('Cache-Control', 'no-store').json({ ok: true }));
 app.use('/api/auth', require('./routes/auth'));
 
 // Everything below needs a signed-in user

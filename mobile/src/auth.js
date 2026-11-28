@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { api, connectLive, disconnectLive, session } from './api';
+import { api, connectLive, disconnectLive, session, wakeServer } from './api';
 
 const Ctx = createContext(null);
 export function AuthProvider({ children }) {
@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
     session.onUnauthorized(logout);
     (async () => {
       const { token } = await session.load();
+      wakeServer();
       if (!token) return setState({ ready: true, user: null });
       try { const { user } = await api('/auth/me'); connectLive(); setState({ ready: true, user }); }
       catch { setState({ ready: true, user: null }); }
